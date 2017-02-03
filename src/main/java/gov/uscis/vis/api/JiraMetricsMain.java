@@ -7,13 +7,12 @@ import gov.uscis.vis.api.models.IssueType;
 import gov.uscis.vis.api.models.MetricsDto;
 import gov.uscis.vis.api.models.Sprint;
 import gov.uscis.vis.api.models.SprintList;
-import gov.uscis.vis.api.models.State;
+import gov.uscis.vis.api.models.StateEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.web.client.RestTemplate;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,7 +53,7 @@ public class JiraMetricsMain implements CommandLineRunner{
 
             // 1) Story Point Forecast Accuracy
             // 6) Defect Fix Rate: Defects fixed / Defects in backlog
-            SprintList closedSprintList = getClosedSprintList(boardId);
+            SprintList closedSprintList = getSprintListWithState(boardId, StateEnum.CLOSED);
             Long latestCompletedSprintId = closedSprintList.getValues().stream()
                     .max((s1, s2) -> s1.getEndDate().compareTo(s2.getEndDate()))
                     .get().getId();
@@ -97,7 +96,7 @@ public class JiraMetricsMain implements CommandLineRunner{
 
             // TODO: Null pointer checks
             boardMetrics.setIssueForecastAccuracy(issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.COMPLETED_STORIES)
-                    /issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_STORIES);
+                    /issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_STORIES));
             boardMetrics.setStoryPointForecastAccuracy(issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.COMPLETED_POINTS)
                     /issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_POINTS));
             boardMetrics.setBugIssueForecastAccuracy((issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.COMPLETED_STORIES) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.COMPLETED_STORIES) + issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.COMPLETED_STORIES))
@@ -137,14 +136,11 @@ public class JiraMetricsMain implements CommandLineRunner{
                 storyPointsCompletedPerSprint[sprintIter] = currentCompletedPointsForSprint;
             }
 
-
-
             //// 3) Unit Test Coverage- have to be done in code
             //// 4) % of automated acceptance Test cases- have to be done in code
 
             // 5) Sprint work breakdown: (New User Stories + product enhancement user stories) / (technical debt user stories + production incidents + other user stories)
             // story totals + tasks + spikes / bugs + preview defects + production defects
-
             boardMetrics.setSprintWorkBreakdownIssues((issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.TASK).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.SPIKE).get(PointTypeEnum.TOTAL_STORIES))
                     / (issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.TOTAL_STORIES)+issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.TOTAL_STORIES)));
             boardMetrics.setSprintWorkBreakdownPoints((issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.TASK).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.SPIKE).get(PointTypeEnum.TOTAL_POINTS))
@@ -158,15 +154,15 @@ public class JiraMetricsMain implements CommandLineRunner{
     }
 
     private SprintList getSprintList(Integer boardId){
-        String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/"
-                + boardId
-                + "/sprint?state=closed";
+        String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/" + boardId;
 
         return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
     }
 
-    private SprintList getClosedSprintList(Integer boardId){
-        String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/" + boardId;
+    private SprintList getSprintListWithState(Integer boardId, StateEnum state){
+        String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/"
+                + boardId
+                + "/sprint?state=" + state.getLabel();
 
         return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
     }

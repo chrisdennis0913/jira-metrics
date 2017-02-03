@@ -8,7 +8,7 @@ import java.util.Date;
 public class Sprint implements Comparable<Sprint>{
     private Long id;
     private String self;
-    private State state;
+    private StateEnum stateEnum;
     private String name;
     private Date startDate;
     private Date endDate;
@@ -31,12 +31,12 @@ public class Sprint implements Comparable<Sprint>{
         this.self = self;
     }
 
-    public State getState() {
-        return state;
+    public StateEnum getStateEnum() {
+        return stateEnum;
     }
 
-    public void setState(State state) {
-        this.state = state;
+    public void setStateEnum(StateEnum stateEnum) {
+        this.stateEnum = stateEnum;
     }
 
     public String getName() {
