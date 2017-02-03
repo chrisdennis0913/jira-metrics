@@ -3,6 +3,8 @@ package gov.uscis.vis.api;
 import gov.uscis.vis.api.models.Field;
 import gov.uscis.vis.api.models.Issue;
 import gov.uscis.vis.api.models.IssueList;
+import gov.uscis.vis.api.models.IssueType;
+import gov.uscis.vis.api.models.MetricsDto;
 import gov.uscis.vis.api.models.Sprint;
 import gov.uscis.vis.api.models.SprintList;
 import gov.uscis.vis.api.models.State;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.web.client.RestTemplate;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,7 +27,7 @@ import java.util.stream.Collectors;
 public class JiraMetricsMain implements CommandLineRunner{
     private static final Logger log = LoggerFactory.getLogger(JiraMetricsMain.class);
 
-    private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332
+    private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332, vdm board = 853
 
     private String adminKey;
 
@@ -32,7 +35,9 @@ public class JiraMetricsMain implements CommandLineRunner{
 
     private static final int TOTAL_SPRINTS_TO_PROCESS = 5;
 
-    Map<Integer, Map<Long, Map<PointTypeEnum, Integer>>> boardsMap;
+    Map<Integer, Map<Long, Map<PointTypeEnum, Double>>> boardsMap;
+    Map<Long, Map<PointTypeEnum, Double>> issueTypesMap; // issue type
+    Map<PointTypeEnum, Double> pointsMap; //completed vs total
 
     @Override
     public void run(String... args) throws Exception {
@@ -41,14 +46,11 @@ public class JiraMetricsMain implements CommandLineRunner{
 
         boardsMap = new HashMap<>(); //board
 
-        Map<Long, Map<PointTypeEnum, Integer>> issueTypesMap; // issue type
-        Map<PointTypeEnum, Integer> pointsMap; //completed vs total
+        Map<Integer, MetricsDto> metricsMap = new HashMap<>();
 
-        for (int boardId: boardList){//vdm board = 853
+        for (int boardId: boardList){
             issueTypesMap = new HashMap<>();
-            pointsMap = new HashMap<>();
-
-            boardsMap.get(722).get(IssueTypeEnum.BUG.getId()).get(PointTypeEnum.COMPLETED);
+            MetricsDto boardMetrics = new MetricsDto();
 
             // 1) Story Point Forecast Accuracy
             // 6) Defect Fix Rate: Defects fixed / Defects in backlog
@@ -61,80 +63,26 @@ public class JiraMetricsMain implements CommandLineRunner{
             List<Issue> storyList = new ArrayList<>(issueList.getIssues().size());
             Collections.copy(issueList.getIssues(), storyList);
 
-            //
-
             Map<Long, Integer> completedStoriesFromClosedSprints = new HashMap<>();
             Map<Long, Integer> completedStoryPointsFromClosedSprints = new HashMap<>();
-            int completedIssuesForStoriesInLatestSprint = 0;
-            int completedPointsForStoriesInLatestSprint = 0;
-            int totalIssuesPlannedForSprint = 0;
-            int totalPointsPlannedForSprint = 0;
-            int totalIssuesPlannedForStoriesInSprint = 0;
-            int totalPointsPlannedForStoriesInSprint = 0;
-            int completedIssuesForBugsInSprint = 0;
-            int completedPointsForBugsInSprint = 0;
-            int totalIssuesPlannedForBugsInSprint = 0;
-            int totalPointsPlannedForBugsInSprint = 0;
-            int totalIssuesPlannedForTasksInSprint = 0;
-            int totalPointsPlannedForTasksInSprint = 0;
-            int totalIssuesPlannedForPreviewDefectsInSprint = 0;
-            int totalPointsPlannedForPreviewDefectsInSprint = 0;
-            int completedIssuesForPreviewDefectsInSprint = 0;
-            int completedPointsForPreviewDefectsInSprint = 0;
-            int totalIssuesPlannedForProductionDefectsInSprint = 0;
-            int totalPointsPlannedForProductionDefectsInSprint = 0;
-            int completedIssuesForProductionDefectsInSprint = 0;
-            int completedPointsForProductionDefectsInSprint = 0;
-            // TODO: nullPointer check for customField_10002
+
             //issuetype: 1=Bug, 3=Task, 7=Story, 11200=Spike, 12102=Preview Defect, 12103=Production Defect
             for (Issue issue : storyList){
                 Field currentField = issue.getFields();
-//                incrementPointValue(currentField.getIssueType(), PointTypeEnum.TOTAL_STORIES, 1);
-//                incrementPointValue(currentField.getIssueType(), PointTypeEnum.TOTAL_POINTS, currentField.getCustomField_10002());
+                IssueType currentIssueType = currentField.getIssueType();
+                incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_STORIES, "1");
+                incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_POINTS, currentField.getCustomField_10002());
+                if (currentField.getResolution() != null && currentField.getResolution().getId().equals(7L)) {
+                    incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_STORIES, "1");
+                    incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_POINTS, currentField.getCustomField_10002());
 
-                if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.BUG.getId())) {
-
-
-
-                    totalIssuesPlannedForBugsInSprint ++;
-                    totalPointsPlannedForBugsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    if (currentField.getResolution() != null) {
-                        completedIssuesForBugsInSprint ++;
-                        completedPointsForBugsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    }
-                }
-                else if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.TASK.getId())) {
-                    totalIssuesPlannedForTasksInSprint ++;
-                    totalPointsPlannedForTasksInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                } else if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.PREVIEW_DEFECT.getId())) {
-                    totalIssuesPlannedForPreviewDefectsInSprint ++;
-                    totalPointsPlannedForPreviewDefectsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    if (currentField.getResolution() != null) {
-                        completedIssuesForPreviewDefectsInSprint ++;
-                        completedPointsForPreviewDefectsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    }
-                } else if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.PRODUCTION_DEFECT.getId())) {
-                    totalIssuesPlannedForProductionDefectsInSprint ++;
-                    totalPointsPlannedForProductionDefectsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    if (currentField.getResolution() != null) {
-                        completedIssuesForProductionDefectsInSprint ++;
-                        completedPointsForProductionDefectsInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    }
-                } else if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.SPIKE.getId())) {
-                    continue;
-                } else if (currentField.getIssueType() != null && currentField.getIssueType().getId().equals(IssueTypeEnum.STORY.getId())) {
-                    totalIssuesPlannedForStoriesInSprint ++;
-                    totalPointsPlannedForStoriesInSprint += Integer.valueOf(currentField.getCustomField_10002());
-                    if (currentField.getResolution() != null) {
-                        completedIssuesForStoriesInLatestSprint ++;
-                        completedPointsForStoriesInLatestSprint += Integer.valueOf(currentField.getCustomField_10002());
-
-                        if (currentField.getClosedSprints() != null && !currentField.getClosedSprints().isEmpty()){
-                            for (Sprint closedSprint :currentField.getClosedSprints()){
-                                int storyCount      = 1;
+                    if (currentIssueType != null && currentIssueType.getId().equals(IssueTypeEnum.STORY.getId())) {
+                        if (currentField.getClosedSprints() != null && !currentField.getClosedSprints().isEmpty()) {
+                            for (Sprint closedSprint : currentField.getClosedSprints()) {
+                                int storyCount = 1;
                                 int storyPointCount = Integer.valueOf(currentField.getCustomField_10002());
-                                if (completedStoriesFromClosedSprints.containsKey(closedSprint.getId())){
-                                    storyCount      += completedStoriesFromClosedSprints.get(closedSprint.getId());
+                                if (completedStoriesFromClosedSprints.containsKey(closedSprint.getId())) {
+                                    storyCount += completedStoriesFromClosedSprints.get(closedSprint.getId());
                                     storyPointCount += completedStoryPointsFromClosedSprints.get(closedSprint.getId());
                                 }
                                 completedStoriesFromClosedSprints.put(closedSprint.getId(), storyCount);
@@ -143,34 +91,31 @@ public class JiraMetricsMain implements CommandLineRunner{
                         }
                     }
                 }
-
-
-
-                totalPointsPlannedForSprint += Integer.valueOf(currentField.getCustomField_10002());
-                totalIssuesPlannedForSprint++;
-
             }
 
-            double issueForecastAccuracy = completedIssuesForStoriesInLatestSprint/totalIssuesPlannedForStoriesInSprint;
-            double storyPointForecastAccuracy = completedPointsForStoriesInLatestSprint/totalPointsPlannedForStoriesInSprint;
-            double bugIssueForecastAccuracy = (completedIssuesForBugsInSprint + completedIssuesForPreviewDefectsInSprint + completedIssuesForProductionDefectsInSprint)
-                    /(totalIssuesPlannedForBugsInSprint + totalIssuesPlannedForPreviewDefectsInSprint + totalIssuesPlannedForProductionDefectsInSprint);
-            double bugStoryPointForecastAccuracy = (completedPointsForBugsInSprint + completedPointsForPreviewDefectsInSprint + completedPointsForProductionDefectsInSprint)
-                    /(totalPointsPlannedForBugsInSprint + totalPointsPlannedForPreviewDefectsInSprint +totalPointsPlannedForProductionDefectsInSprint);
+            boardsMap.put(boardId, new HashMap<Long, Map<PointTypeEnum, Double>>(issueTypesMap));
+
+            // TODO: Null pointer checks
+            boardMetrics.setIssueForecastAccuracy(issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.COMPLETED_STORIES)
+                    /issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_STORIES);
+            boardMetrics.setStoryPointForecastAccuracy(issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.COMPLETED_POINTS)
+                    /issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_POINTS));
+            boardMetrics.setBugIssueForecastAccuracy((issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.COMPLETED_STORIES) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.COMPLETED_STORIES) + issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.COMPLETED_STORIES))
+                    /(issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.TOTAL_STORIES)));
+            boardMetrics.setBugStoryPointForecastAccuracy((issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.COMPLETED_POINTS) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.COMPLETED_POINTS) + issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.COMPLETED_POINTS))
+                    /(issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.TOTAL_POINTS)));
 
             // 2) Story Point Completion Rate
-            Integer storyPointsCompletedForLatestSprint = completedPointsForStoriesInLatestSprint;
-            Integer issuesCompletedForLatestSprint = completedIssuesForStoriesInLatestSprint;
+
             // More difficult than expected to calculate the story points completed for multiple previous sprints
             // Have to assume that an issue is updated if accessed from a previous sprint, even if completed in a later sprint
             // Need to recursively keep track of "subtract X amount of completed issues from Y past sprint"
-
             int sprintsToProcess = Math.min(closedSprintList.getTotal(), TOTAL_SPRINTS_TO_PROCESS);
 
             int[] storiesCompletedPerSprint     = new int[sprintsToProcess];
             int[] storyPointsCompletedPerSprint = new int[sprintsToProcess];
-            storiesCompletedPerSprint[0] = completedIssuesForStoriesInLatestSprint;
-            storyPointsCompletedPerSprint[0] = completedPointsForStoriesInLatestSprint;
+            storiesCompletedPerSprint[0] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_STORIES);;
+            storyPointsCompletedPerSprint[0] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_POINTS);;
 
             Collections.sort(closedSprintList.getValues());
             for(int sprintIter = 1; sprintIter < sprintsToProcess; sprintIter ++){ //sprint 0 already processed
@@ -198,15 +143,18 @@ public class JiraMetricsMain implements CommandLineRunner{
             //// 4) % of automated acceptance Test cases- have to be done in code
 
             // 5) Sprint work breakdown: (New User Stories + product enhancement user stories) / (technical debt user stories + production incidents + other user stories)
-            // story totals / tasks + bugs + spikes + preview defects + production defects
+            // story totals + tasks + spikes / bugs + preview defects + production defects
 
-            double sprintWorkBreakdownIssues =  completedIssuesForStoriesInLatestSprint /
-            double sprintWorkBreakdownPoints = completedPointsForStoriesInLatestSprint /
+            boardMetrics.setSprintWorkBreakdownIssues((issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.TASK).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.SPIKE).get(PointTypeEnum.TOTAL_STORIES))
+                    / (issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.TOTAL_STORIES) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.TOTAL_STORIES)+issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.TOTAL_STORIES)));
+            boardMetrics.setSprintWorkBreakdownPoints((issueTypesMap.get(IssueTypeEnum.STORY).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.TASK).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.SPIKE).get(PointTypeEnum.TOTAL_POINTS))
+                    / (issueTypesMap.get(IssueTypeEnum.BUG).get(PointTypeEnum.TOTAL_POINTS) + issueTypesMap.get(IssueTypeEnum.PREVIEW_DEFECT).get(PointTypeEnum.TOTAL_POINTS)+issueTypesMap.get(IssueTypeEnum.PRODUCTION_DEFECT).get(PointTypeEnum.TOTAL_POINTS)));
 
             //// 7) % of top Business Value features completed- forecast accuracy
             //// 8) Cost per release / planned cost per release must be done outside of Jira
-        }
 
+            metricsMap.put(boardId, boardMetrics);
+        }
     }
 
     private SprintList getSprintList(Integer boardId){
@@ -227,5 +175,31 @@ public class JiraMetricsMain implements CommandLineRunner{
         String jiraRequestIssuesUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/sprint/" + latestCompletedSprintId + "/issue";
         String restrictIssueFields = "&fields=id,key,status,resolution";
         return restTemplate.getForObject(jiraRequestIssuesUrl + adminKey + restrictIssueFields, IssueList.class);
+    }
+
+    private void incrementPointValue(IssueType issueType, PointTypeEnum pointTypeEnum, String stringValue){
+        double pointValue = 1;
+        try{
+            pointValue = Double.valueOf(stringValue);
+        } catch (NullPointerException npe) {}
+
+        pointsMap = issueTypesMap.get(issueType.getId());
+        if (pointsMap == null) pointsMap = new HashMap<>();
+        if (pointsMap.containsKey(pointTypeEnum)){
+            pointValue += pointsMap.get(pointTypeEnum);
+        }
+        pointsMap.put(pointTypeEnum, pointValue);
+
+        issueTypesMap.put(issueType.getId(), pointsMap);
+    }
+
+    private int getPointTypeTotal(Map<Long, Map<PointTypeEnum,Double>> issueTypeMap, PointTypeEnum pointTypeEnum) {
+        int pointTypeTotal = 0;
+        for (Map<PointTypeEnum,Double> pointTypeEnumMap : issueTypeMap.values()) {
+            if (pointTypeEnumMap.containsKey(pointTypeEnum)) {
+                pointTypeTotal += pointTypeEnumMap.get(pointTypeEnum);
+            }
+        }
+        return pointTypeTotal;
     }
 }
