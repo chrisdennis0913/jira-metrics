@@ -3,6 +3,9 @@ buildscript {
 		springBootVersion = '1.4.3.RELEASE'
 	}
 	repositories {
+        maven{
+            url "https://maven.atlassian.com/content/repositories/atlassian-public/"
+        }
 		mavenCentral()
 	}
 	dependencies {
@@ -22,6 +25,9 @@ jar {
 sourceCompatibility = 1.8
 
 repositories {
+    maven{
+        url "https://maven.atlassian.com/content/repositories/atlassian-public/"
+    }
 	mavenCentral()
 }
 
@@ -31,5 +37,9 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-web')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 
-	compile('com.atlassian.jira:jira-rest-java-client-core:3.0.0')
+	compile('com.atlassian.jira:jira-rest-java-client-core:4.0.0')
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '2.3'
 }
