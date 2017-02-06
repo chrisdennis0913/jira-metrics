@@ -6,6 +6,7 @@ import java.util.Arrays;
  * Created by cedennis on 2/3/17.
  */
 public class MetricsDto {
+
     int boardId;
 
     // 1) Story Point Forecast Accuracy
@@ -14,7 +15,7 @@ public class MetricsDto {
 
     // 2) Story Point Completion Rate
     int[] storiesCompletedPerSprint;
-    int[] storyPointsCompletedPerSprint;
+    double[] storyPointsCompletedPerSprint;
 
     // 5) Sprint work breakdown: (New User Stories + product enhancement user stories) / (technical debt user stories + production incidents + other user stories)
     // story totals + tasks + spikes / bugs + preview defects + production defects
@@ -24,6 +25,10 @@ public class MetricsDto {
     // 6) Defect Fix Rate: Defects fixed / Defects in backlog
     double bugIssueForecastAccuracy;
     double bugStoryPointForecastAccuracy;
+
+    public MetricsDto(int boardId) {
+        this.boardId = boardId;
+    }
 
     public int getBoardId() {
         return boardId;
@@ -57,11 +62,11 @@ public class MetricsDto {
         this.storiesCompletedPerSprint = storiesCompletedPerSprint;
     }
 
-    public int[] getStoryPointsCompletedPerSprint() {
+    public double[] getStoryPointsCompletedPerSprint() {
         return storyPointsCompletedPerSprint;
     }
 
-    public void setStoryPointsCompletedPerSprint(int[] storyPointsCompletedPerSprint) {
+    public void setStoryPointsCompletedPerSprint(double[] storyPointsCompletedPerSprint) {
         this.storyPointsCompletedPerSprint = storyPointsCompletedPerSprint;
     }
 
