@@ -1,5 +1,7 @@
 package gov.uscis.vis.api.models;
 
+import gov.uscis.vis.api.Utils.NumberUtils;
+
 import java.util.Arrays;
 
 /**
@@ -106,14 +108,14 @@ public class MetricsDto {
     public String toString() {
         return "MetricsDto{" +
                 "boardId=" + boardId +
-                ", issueForecastAccuracy=" + issueForecastAccuracy +
-                ", storyPointForecastAccuracy=" + storyPointForecastAccuracy +
+                ", issueForecastAccuracy=" + NumberUtils.decimalFormat.format(issueForecastAccuracy) +
+                ", storyPointForecastAccuracy=" + NumberUtils.decimalFormat.format(storyPointForecastAccuracy) +
                 ", storiesCompletedPerSprint=" + Arrays.toString(storiesCompletedPerSprint) +
                 ", storyPointsCompletedPerSprint=" + Arrays.toString(storyPointsCompletedPerSprint) +
-                ", sprintWorkBreakdownIssues=" + sprintWorkBreakdownIssues +
-                ", sprintWorkBreakdownPoints=" + sprintWorkBreakdownPoints +
-                ", bugIssueForecastAccuracy=" + bugIssueForecastAccuracy +
-                ", bugStoryPointForecastAccuracy=" + bugStoryPointForecastAccuracy +
+                ", sprintWorkBreakdownIssues=" + NumberUtils.decimalFormat.format(sprintWorkBreakdownIssues) +
+                ", sprintWorkBreakdownPoints=" + NumberUtils.decimalFormat.format(sprintWorkBreakdownPoints) +
+                ", bugIssueForecastAccuracy=" + NumberUtils.decimalFormat.format(bugIssueForecastAccuracy) +
+                ", bugStoryPointForecastAccuracy=" + NumberUtils.decimalFormat.format(bugStoryPointForecastAccuracy) +
                 '}';
     }
 }
