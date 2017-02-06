@@ -1,5 +1,8 @@
 package gov.uscis.vis.api;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uscis.vis.api.models.Field;
 import gov.uscis.vis.api.models.Issue;
 import gov.uscis.vis.api.models.IssueList;
@@ -11,8 +14,12 @@ import gov.uscis.vis.api.models.StateEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +29,9 @@ import java.util.stream.Collectors;
 /**
  * Created by cedennis on 1/30/17.
  */
-public class JiraMetricsMain implements CommandLineRunner{
+@SpringBootApplication
+public class JiraMetricsMain implements CommandLineRunner
+{
     private static final Logger log = LoggerFactory.getLogger(JiraMetricsMain.class);
 
     private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332, vdm board = 853
@@ -35,6 +44,10 @@ public class JiraMetricsMain implements CommandLineRunner{
 
     private Map<Long, Map<PointTypeEnum, Double>> issueTypesMap; // issue type
     private Map<PointTypeEnum, Double> pointsMap; //completed vs total
+
+    public static void main(String[] args) {
+        SpringApplication.run(JiraMetricsMain.class, args);
+    }
 
     @Override
     public void run(String... args) throws Exception {
@@ -59,23 +72,23 @@ public class JiraMetricsMain implements CommandLineRunner{
 //            Collections.copy(issueList.getIssues(), storyList);
 
             Map<Long, Integer> completedStoriesFromClosedSprints = new HashMap<>();
-            Map<Long, Integer> completedStoryPointsFromClosedSprints = new HashMap<>();
+            Map<Long, Double> completedStoryPointsFromClosedSprints = new HashMap<>();
 
             //issuetype: 1=Bug, 3=Task, 7=Story, 11200=Spike, 12102=Preview Defect, 12103=Production Defect
             for (Issue issue : issueList.getIssues()){
                 Field currentField = issue.getFields();
-                IssueType currentIssueType = currentField.getIssueType();
+                IssueType currentIssueType = currentField.getIssuetype();
                 incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_STORIES, "1");
-                incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_POINTS, currentField.getCustomField_10002());
+                incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_POINTS, currentField.getCustomfield_10002());
                 if (currentField.getResolution() != null && currentField.getResolution().getId().equals(7L)) {
                     incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_STORIES, "1");
-                    incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_POINTS, currentField.getCustomField_10002());
+                    incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_POINTS, currentField.getCustomfield_10002());
 
                     if (currentIssueType != null && currentIssueType.getId().equals(IssueTypeEnum.STORY.getId())) {
                         if (currentField.getClosedSprints() != null && !currentField.getClosedSprints().isEmpty()) {
                             for (Sprint closedSprint : currentField.getClosedSprints()) {
                                 int storyCount = 1;
-                                int storyPointCount = Integer.valueOf(currentField.getCustomField_10002());
+                                double storyPointCount = currentField.getCustomfield_10002()!= null ? Double.valueOf(currentField.getCustomfield_10002()) : 0;
                                 if (completedStoriesFromClosedSprints.containsKey(closedSprint.getId())) {
                                     storyCount += completedStoriesFromClosedSprints.get(closedSprint.getId());
                                     storyPointCount += completedStoryPointsFromClosedSprints.get(closedSprint.getId());
@@ -119,7 +132,7 @@ public class JiraMetricsMain implements CommandLineRunner{
                 List<Issue> listOfIssues = currentIssueList.getIssues().stream().filter(issue -> issue.getFields().getResolution() != null).collect(Collectors.toList());
                 for(Issue currentIssue: listOfIssues){
                     currentCompletedIssuesForSprint++;
-                    currentCompletedPointsForSprint += Integer.valueOf(currentIssue.getFields().getCustomField_10002());
+                    currentCompletedPointsForSprint += Integer.valueOf(currentIssue.getFields().getCustomfield_10002());
                 }
 
                 currentCompletedIssuesForSprint -= completedStoriesFromClosedSprints.get(currentSprint.getId());
@@ -147,6 +160,9 @@ public class JiraMetricsMain implements CommandLineRunner{
 
             metricsMap.put(boardId, boardMetrics);
         }
+
+        System.out.println(metricsMap);
+        log.error(metricsMap.toString());
     }
 
     private void initiateIssueTypesMap() {
@@ -163,7 +179,8 @@ public class JiraMetricsMain implements CommandLineRunner{
     private SprintList getSprintList(Integer boardId){
         String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/" + boardId;
 
-        return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
+//        return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
+        return getSampleSprintList();
     }
 
     private SprintList getSprintListWithState(Integer boardId, StateEnum state){
@@ -171,20 +188,24 @@ public class JiraMetricsMain implements CommandLineRunner{
                 + boardId
                 + "/sprint?state=" + state.getLabel();
 
-        return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
+//        return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
+        return getSampleSprintList();
     }
 
     private IssueList getIssueListForSprint(Long latestCompletedSprintId) {
         String jiraRequestIssuesUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/sprint/" + latestCompletedSprintId + "/issue";
         String restrictIssueFields = "&fields=id,key,status,resolution";
-        return restTemplate.getForObject(jiraRequestIssuesUrl + adminKey + restrictIssueFields, IssueList.class);
+//        return restTemplate.getForObject(jiraRequestIssuesUrl + adminKey + restrictIssueFields, IssueList.class);
+        return getSampleIssueList();
     }
 
     private void incrementPointValue(IssueType issueType, PointTypeEnum pointTypeEnum, String stringValue){
         double pointValue = 1;
         try{
             pointValue = Double.valueOf(stringValue);
-        } catch (NullPointerException npe) {log.debug("issueType= " + issueType + ", pointTypeEnum= " + pointTypeEnum + " was null");}
+        } catch (NullPointerException npe) {
+            log.debug("issueType= " + issueType + ", pointTypeEnum= " + pointTypeEnum + " was null");
+        }
 
         pointsMap = issueTypesMap.get(issueType.getId());
         if (pointsMap == null) pointsMap = new HashMap<>();
@@ -204,5 +225,47 @@ public class JiraMetricsMain implements CommandLineRunner{
             }
         }
         return pointTypeTotal;
+    }
+
+    private SprintList getSampleSprintList(){
+        ObjectMapper mapper = new ObjectMapper();
+        SprintList sampleSprintList = new SprintList();
+
+        try {
+            // Convert JSON string from file to Object
+            sampleSprintList = mapper.readValue(new File("/Users/chrisdennis0913/IdeaProjects/jira-metrics/src/main/resources/static/sampleSprintList.json"), SprintList.class);
+            System.out.println(sampleSprintList);
+
+            return sampleSprintList;
+
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sampleSprintList;
+    }
+
+    private IssueList getSampleIssueList(){
+        ObjectMapper mapper = new ObjectMapper();
+        IssueList sampleIssueList = new IssueList();
+
+        try {
+            // Convert JSON string from file to Object
+            sampleIssueList = mapper.readValue(new File("/Users/chrisdennis0913/IdeaProjects/jira-metrics/src/main/resources/static/sampleIssueList.json"), IssueList.class);
+            System.out.println(sampleIssueList);
+
+            return sampleIssueList;
+
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sampleIssueList;
     }
 }

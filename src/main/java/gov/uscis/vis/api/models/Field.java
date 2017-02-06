@@ -1,15 +1,18 @@
 package gov.uscis.vis.api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
 /**
  * Created by cedennis on 1/30/17.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Field {
     private Resolution resolution;
-    private IssueType issueType;
+    private IssueType issuetype;
     private Status status;
-    private String customField_10002;
+    private String customfield_10002;
     private List<Sprint> closedSprints;
 
     public Resolution getResolution() {
@@ -20,12 +23,12 @@ public class Field {
         this.resolution = resolution;
     }
 
-    public IssueType getIssueType() {
-        return issueType;
+    public IssueType getIssuetype() {
+        return issuetype;
     }
 
-    public void setIssueType(IssueType issueType) {
-        this.issueType = issueType;
+    public void setIssuetype(IssueType issuetype) {
+        this.issuetype = issuetype;
     }
 
     public Status getStatus() {
@@ -36,12 +39,12 @@ public class Field {
         this.status = status;
     }
 
-    public String getCustomField_10002() {
-        return customField_10002;
+    public String getCustomfield_10002() {
+        return customfield_10002;
     }
 
-    public void setCustomField_10002(String customField_10002) {
-        this.customField_10002 = customField_10002;
+    public void setCustomfield_10002(String customfield_10002) {
+        this.customfield_10002 = customfield_10002;
     }
 
     public List<Sprint> getClosedSprints() {

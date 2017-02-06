@@ -1,10 +1,13 @@
 package gov.uscis.vis.api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Date;
 
 /**
  * Created by cedennis on 1/30/17.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Sprint implements Comparable<Sprint>{
     private Long id;
     private String self;
@@ -82,5 +85,19 @@ public class Sprint implements Comparable<Sprint>{
     @Override
     public int compareTo(Sprint sprint) {
         return this.startDate.compareTo(sprint.startDate);
+    }
+
+    @Override
+    public String toString() {
+        return "Sprint{" +
+                "id=" + id +
+                ", self='" + self + '\'' +
+                ", stateEnum=" + stateEnum +
+                ", name='" + name + '\'' +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", completeDate=" + completeDate +
+                ", originBoardId=" + originBoardId +
+                '}';
     }
 }

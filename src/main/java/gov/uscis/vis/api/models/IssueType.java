@@ -1,8 +1,11 @@
 package gov.uscis.vis.api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * Created by cedennis on 1/30/17.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class IssueType {
     private Long id;
     private String name;

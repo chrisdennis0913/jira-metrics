@@ -1,10 +1,13 @@
 package gov.uscis.vis.api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
 /**
  * Created by cedennis on 1/30/17.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SprintList {
     private int maxResults;
     private int startAt;
@@ -50,5 +53,16 @@ public class SprintList {
 
     public void setValues(List<Sprint> values) {
         this.values = values;
+    }
+
+    @Override
+    public String toString() {
+        return "SprintList{" +
+                "maxResults=" + maxResults +
+                ", startAt=" + startAt +
+                ", total=" + total +
+                ", isLast=" + isLast +
+                ", values=" + values +
+                '}';
     }
 }
