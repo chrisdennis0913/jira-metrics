@@ -26,7 +26,7 @@ public class StoryServiceJira implements StoryService{
     public SprintList getSprintListWithState(Integer boardId, StateEnum state){
         String jiraRequestSprintUrl = "https://sharedservices.dhs.gov/jira/rest/agile/1.0/board/"
                 + boardId
-                + "/sprint?state=" + state.getLabel();
+                + "/sprint?state=" + state.getLabel() + "&order+by+endDate";
 
         return restTemplate.getForObject(jiraRequestSprintUrl + adminKey, SprintList.class);
 

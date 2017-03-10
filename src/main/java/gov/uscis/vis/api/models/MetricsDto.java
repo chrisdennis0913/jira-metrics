@@ -25,8 +25,8 @@ public class MetricsDto {
     double sprintWorkBreakdownPoints;
 
     // 6) Defect Fix Rate: Defects fixed / Defects in backlog
-    double bugIssueForecastAccuracy;
-    double bugStoryPointForecastAccuracy;
+    Double bugIssueForecastAccuracy;
+    Double bugStoryPointForecastAccuracy;
 
     public MetricsDto(int boardId) {
         this.boardId = boardId;
@@ -88,20 +88,20 @@ public class MetricsDto {
         this.sprintWorkBreakdownPoints = sprintWorkBreakdownPoints;
     }
 
-    public double getBugIssueForecastAccuracy() {
+    public Double getBugIssueForecastAccuracy() {
         return bugIssueForecastAccuracy;
     }
 
-    public void setBugIssueForecastAccuracy(double bugIssueForecastAccuracy) {
-        this.bugIssueForecastAccuracy = bugIssueForecastAccuracy;
+    public void setBugIssueForecastAccuracy(Double bugIssueForecastAccuracy) {
+        this.bugIssueForecastAccuracy = bugIssueForecastAccuracy.equals(Double.NaN) ? 100.0 : bugIssueForecastAccuracy;
     }
 
-    public double getBugStoryPointForecastAccuracy() {
+    public Double getBugStoryPointForecastAccuracy() {
         return bugStoryPointForecastAccuracy;
     }
 
-    public void setBugStoryPointForecastAccuracy(double bugStoryPointForecastAccuracy) {
-        this.bugStoryPointForecastAccuracy = bugStoryPointForecastAccuracy;
+    public void setBugStoryPointForecastAccuracy(Double bugStoryPointForecastAccuracy) {
+        this.bugStoryPointForecastAccuracy = bugStoryPointForecastAccuracy.equals(Double.NaN) ? 100.0 : bugStoryPointForecastAccuracy;
     }
 
     @Override

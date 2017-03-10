@@ -11,7 +11,7 @@ import java.util.List;
 public class SprintList {
     private int maxResults;
     private int startAt;
-    private int total;
+    private Integer total;
     private boolean isLast;
     private List<Sprint> values;
 
@@ -31,11 +31,11 @@ public class SprintList {
         this.startAt = startAt;
     }
 
-    public int getTotal() {
+    public Integer getTotal() {
         return total;
     }
 
-    public void setTotal(int total) {
+    public void setTotal(Integer total) {
         this.total = total;
     }
 

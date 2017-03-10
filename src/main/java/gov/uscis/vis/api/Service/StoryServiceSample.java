@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uscis.vis.api.models.IssueList;
 import gov.uscis.vis.api.models.SprintList;
 import gov.uscis.vis.api.models.StateEnum;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
@@ -22,7 +24,7 @@ public class StoryServiceSample implements StoryService{
 
         try {
             // Convert JSON string from file to Object
-            sampleSprintList = mapper.readValue(new File("/Users/chrisdennis0913/IdeaProjects/jira-metrics/src/main/resources/static/sampleSprintList.json"), SprintList.class);
+            sampleSprintList = mapper.readValue(new File("./src/main/resources/static/sampleSprintList.json"), SprintList.class);
 
         } catch (JsonGenerationException e) {
             e.printStackTrace();
@@ -40,7 +42,7 @@ public class StoryServiceSample implements StoryService{
 
         try {
             // Convert JSON string from file to Object
-            sampleSprintList = mapper.readValue(new File("/Users/chrisdennis0913/IdeaProjects/jira-metrics/src/main/resources/static/sampleSprintList.json"), SprintList.class);
+            sampleSprintList = mapper.readValue(new File("./src/main/resources/static/sampleSprintList.json"), SprintList.class);
 
         } catch (JsonGenerationException e) {
             e.printStackTrace();
@@ -58,7 +60,7 @@ public class StoryServiceSample implements StoryService{
 
         try {
             // Convert JSON string from file to Object
-            sampleIssueList = mapper.readValue(new File("/Users/chrisdennis0913/IdeaProjects/jira-metrics/src/main/resources/static/sampleIssueList.json"), IssueList.class);
+            sampleIssueList = mapper.readValue(new File("./src/main/resources/static/sampleIssueList" + latestCompletedSprintId + ".json"), IssueList.class);
 
         } catch (JsonGenerationException e) {
             e.printStackTrace();

@@ -1,6 +1,7 @@
 package gov.uscis.vis.api;
 
 import gov.uscis.vis.api.Service.StoryService;
+import gov.uscis.vis.api.Service.StoryServiceJira;
 import gov.uscis.vis.api.Service.StoryServiceSample;
 import gov.uscis.vis.api.models.Field;
 import gov.uscis.vis.api.models.Issue;
@@ -32,7 +33,7 @@ public class JiraMetricsMain implements CommandLineRunner
 
     private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332, vdm board = 853
 
-    private static final int TOTAL_SPRINTS_TO_PROCESS = 5;
+    private static final int TOTAL_SPRINTS_TO_PROCESS = 3;
 
     private Map<Long, Map<PointTypeEnum, Double>> issueTypesMap; // issue type
     private Map<PointTypeEnum, Double> pointsMap; //completed vs total
@@ -60,9 +61,9 @@ public class JiraMetricsMain implements CommandLineRunner
             // 1) Story Point Forecast Accuracy
             // 6) Defect Fix Rate: Defects fixed / Defects in backlog
             SprintList closedSprintList = storyService.getSprintListWithState(boardId, StateEnum.CLOSED);
-            Long latestCompletedSprintId = closedSprintList.getValues().stream()
-                    .max((s1, s2) -> s1.getEndDate().compareTo(s2.getEndDate()))
-                    .get().getId();
+            Collections.sort(closedSprintList.getValues());
+            Long latestCompletedSprintId = closedSprintList.getValues().get(closedSprintList.getValues().size()-1).getId();
+            Long lastSprintId = closedSprintList.getValues().get(closedSprintList.getValues().size()-2).getId();
             IssueList issueList = storyService.getIssueListForSprint(latestCompletedSprintId);
 
 //            List<Issue> storyList = new ArrayList<>(issueList.getIssues().size());
@@ -72,7 +73,7 @@ public class JiraMetricsMain implements CommandLineRunner
             Map<Long, Double> completedStoryPointsFromClosedSprints = new HashMap<>();
 
             //issuetype: 1=Bug, 3=Task, 7=Story, 11200=Spike, 12102=Preview Defect, 12103=Production Defect
-            extractMetricsFromIssueList(issueList, completedStoriesFromClosedSprints, completedStoryPointsFromClosedSprints);
+            extractMetricsFromIssueList(issueList, completedStoriesFromClosedSprints, completedStoryPointsFromClosedSprints, lastSprintId);
 
             boardMetrics.setIssueForecastAccuracy(issueTypesMap.get(IssueTypeEnum.STORY.getId()).get(PointTypeEnum.COMPLETED_STORIES) * 100
                     /issueTypesMap.get(IssueTypeEnum.STORY.getId()).get(PointTypeEnum.TOTAL_STORIES));
@@ -88,28 +89,34 @@ public class JiraMetricsMain implements CommandLineRunner
             // More difficult than expected to calculate the story points completed for multiple previous sprints
             // Have to assume that an issue is updated if accessed from a previous sprint, even if completed in a later sprint
             // Need to recursively keep track of "subtract X amount of completed issues from Y past sprint"
-            int sprintsToProcess = Math.min(closedSprintList.getTotal(), TOTAL_SPRINTS_TO_PROCESS);
+            int sprintsToProcess = Math.min(closedSprintList.getValues().size(), TOTAL_SPRINTS_TO_PROCESS);
 
             int[] storiesCompletedPerSprint     = new int[sprintsToProcess];
             double[] storyPointsCompletedPerSprint = new double[sprintsToProcess];
-            storiesCompletedPerSprint[0] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_STORIES);
-            storyPointsCompletedPerSprint[0] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_POINTS);
+            storiesCompletedPerSprint[sprintsToProcess - 1] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_STORIES);
+            storyPointsCompletedPerSprint[sprintsToProcess - 1] = getPointTypeTotal(issueTypesMap, PointTypeEnum.COMPLETED_POINTS);
 
-            Collections.sort(closedSprintList.getValues());
-            for(int sprintIter = 1; sprintIter < sprintsToProcess; sprintIter ++){ //sprint 0 already processed
+            for(int sprintIter = sprintsToProcess - 2; sprintIter >= 0; sprintIter --){ //latest sprint already processed
                 int currentCompletedIssuesForSprint = 0;
                 double currentCompletedPointsForSprint = 0;
 
                 Sprint currentSprint = closedSprintList.getValues().get(sprintIter);
                 IssueList currentIssueList = storyService.getIssueListForSprint(currentSprint.getId());
-                List<Issue> listOfIssues = currentIssueList.getIssues().stream().filter(issue -> issue.getFields().getResolution() != null).collect(Collectors.toList());
+                List<Issue> listOfIssues = currentIssueList.getIssues().stream()
+                        .filter(issue -> issue.getFields().getStatus() != null && issue.getFields().getStatus().getName().equalsIgnoreCase("Done"))
+                        .collect(Collectors.toList());
                 for(Issue currentIssue: listOfIssues){
                     currentCompletedIssuesForSprint++;
-                    currentCompletedPointsForSprint += currentIssue.getFields().getCustomfield_10002() != null ? Double.valueOf(currentIssue.getFields().getCustomfield_10002()) : 1.0;
+                    currentCompletedPointsForSprint += currentIssue.getFields().getCustomfield_10002() != null ? Double.valueOf(currentIssue.getFields().getCustomfield_10002()) : 0.0;
+                    if (sprintIter > 0){
+                        trackOldIssues(completedStoriesFromClosedSprints, completedStoryPointsFromClosedSprints, closedSprintList.getValues().get(sprintIter - 1).getId(), currentIssue.getFields());
+                    }
                 }
 
-                currentCompletedIssuesForSprint -= completedStoriesFromClosedSprints.get(currentSprint.getId());
-                currentCompletedPointsForSprint -= completedStoryPointsFromClosedSprints.get(currentSprint.getId());
+                if (!completedStoriesFromClosedSprints.isEmpty() && completedStoriesFromClosedSprints.containsKey(currentSprint.getId())){
+                    currentCompletedIssuesForSprint -= completedStoriesFromClosedSprints.get(currentSprint.getId());
+                    currentCompletedPointsForSprint -= completedStoryPointsFromClosedSprints.get(currentSprint.getId());
+                }
 
                 storiesCompletedPerSprint[sprintIter] = currentCompletedIssuesForSprint;
                 storyPointsCompletedPerSprint[sprintIter] = currentCompletedPointsForSprint;
@@ -138,29 +145,35 @@ public class JiraMetricsMain implements CommandLineRunner
         log.error(metricsMap.toString());
     }
 
-    public void extractMetricsFromIssueList(IssueList issueList, Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints) {
+    public void extractMetricsFromIssueList(IssueList issueList, Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints, Long lastSprintId) {
         for (Issue issue : issueList.getIssues()){
             Field currentField = issue.getFields();
             IssueType currentIssueType = currentField.getIssuetype();
             incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_STORIES, "1");
             incrementPointValue(currentIssueType, PointTypeEnum.TOTAL_POINTS, currentField.getCustomfield_10002());
-            if (currentField.getResolution() != null && currentField.getResolution().getId().equals(7L)) {
+            if (currentField.getStatus() != null && currentField.getStatus().getId().equals(10018L)) { //status id for DONE is 10018L
                 incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_STORIES, "1");
                 incrementPointValue(currentIssueType, PointTypeEnum.COMPLETED_POINTS, currentField.getCustomfield_10002());
 
                 if (currentIssueType != null && currentIssueType.getId().equals(IssueTypeEnum.STORY.getId())) {
-                    if (currentField.getClosedSprints() != null && !currentField.getClosedSprints().isEmpty()) {
-                        for (Sprint closedSprint : currentField.getClosedSprints()) {
-                            int storyCount = 1;
-                            double storyPointCount = currentField.getCustomfield_10002()!= null ? Double.valueOf(currentField.getCustomfield_10002()) : 0;
-                            if (completedStoriesFromClosedSprints.containsKey(closedSprint.getId())) {
-                                storyCount += completedStoriesFromClosedSprints.get(closedSprint.getId());
-                                storyPointCount += completedStoryPointsFromClosedSprints.get(closedSprint.getId());
-                            }
-                            completedStoriesFromClosedSprints.put(closedSprint.getId(), storyCount);
-                            completedStoryPointsFromClosedSprints.put(closedSprint.getId(), storyPointCount);
-                        }
+                    trackOldIssues(completedStoriesFromClosedSprints, completedStoryPointsFromClosedSprints, lastSprintId, currentField);
+                }
+            }
+        }
+    }
+
+    private void trackOldIssues(Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints, Long lastSprintId, Field currentField) {
+        if (currentField.getClosedSprints() != null && !currentField.getClosedSprints().isEmpty()) {
+            for (Sprint closedSprint : currentField.getClosedSprints()) {
+                if(closedSprint.getId().equals(lastSprintId)){
+                    int storyCount = 1;
+                    double storyPointCount = currentField.getCustomfield_10002()!= null ? Double.valueOf(currentField.getCustomfield_10002()) : 0;
+                    if (completedStoriesFromClosedSprints.containsKey(closedSprint.getId())) {
+                        storyCount += completedStoriesFromClosedSprints.get(closedSprint.getId());
+                        storyPointCount += completedStoryPointsFromClosedSprints.get(closedSprint.getId());
                     }
+                    completedStoriesFromClosedSprints.put(closedSprint.getId(), storyCount);
+                    completedStoryPointsFromClosedSprints.put(closedSprint.getId(), storyPointCount);
                 }
             }
         }
@@ -178,8 +191,8 @@ public class JiraMetricsMain implements CommandLineRunner
     }
 
     private void incrementPointValue(IssueType issueType, PointTypeEnum pointTypeEnum, String stringValue){
-        System.out.println(issueType.getName() + " pte: " + pointTypeEnum + " sv " + stringValue);
-        double pointValue = 1;
+        System.out.println(issueType.getName() + " pte: " + pointTypeEnum + " count " + stringValue);
+        double pointValue = 0;
         try{
             pointValue = Double.valueOf(stringValue);
         } catch (NullPointerException npe) {
