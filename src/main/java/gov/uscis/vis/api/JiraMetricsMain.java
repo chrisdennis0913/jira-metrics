@@ -33,7 +33,7 @@ public class JiraMetricsMain implements CommandLineRunner
 
     private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332, vdm board = 853
 
-    private static final int TOTAL_SPRINTS_TO_PROCESS = 3;
+    private static final int TOTAL_SPRINTS_TO_PROCESS = 5;
 
     private Map<Long, Map<PointTypeEnum, Double>> issueTypesMap; // issue type
     private Map<PointTypeEnum, Double> pointsMap; //completed vs total

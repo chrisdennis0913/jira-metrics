@@ -106,16 +106,16 @@ public class MetricsDto {
 
     @Override
     public String toString() {
-        return "MetricsDto{" +
+        return "{" +
                 "boardId=" + boardId +
-                ", issueForecastAccuracy=" + NumberUtils.decimalFormat.format(issueForecastAccuracy) +
-                ", storyPointForecastAccuracy=" + NumberUtils.decimalFormat.format(storyPointForecastAccuracy) +
+                ", issueForecastAccuracy=" + NumberUtils.decimalFormat.format(issueForecastAccuracy) + "%" +
+                ", storyPointForecastAccuracy=" + NumberUtils.decimalFormat.format(storyPointForecastAccuracy) + "%" +
                 ", storiesCompletedPerSprint=" + Arrays.toString(storiesCompletedPerSprint) +
                 ", storyPointsCompletedPerSprint=" + Arrays.toString(storyPointsCompletedPerSprint) +
                 ", sprintWorkBreakdownIssues=" + NumberUtils.decimalFormat.format(sprintWorkBreakdownIssues) +
                 ", sprintWorkBreakdownPoints=" + NumberUtils.decimalFormat.format(sprintWorkBreakdownPoints) +
-                ", bugIssueForecastAccuracy=" + NumberUtils.decimalFormat.format(bugIssueForecastAccuracy) +
-                ", bugStoryPointForecastAccuracy=" + NumberUtils.decimalFormat.format(bugStoryPointForecastAccuracy) +
+                ", bugIssueForecastAccuracy=" + NumberUtils.decimalFormat.format(bugIssueForecastAccuracy) + "%" +
+                ", bugStoryPointForecastAccuracy=" + NumberUtils.decimalFormat.format(bugStoryPointForecastAccuracy) + "%" +
                 '}';
     }
 }
