@@ -1,7 +1,7 @@
-package gov.uscis.vis.api;
+package gov.uscis.vis.api.service;
 
-import gov.uscis.vis.api.service.StoryService;
-import gov.uscis.vis.api.service.StoryServiceSample;
+import gov.uscis.vis.api.IssueTypeEnum;
+import gov.uscis.vis.api.PointTypeEnum;
 import gov.uscis.vis.api.models.Field;
 import gov.uscis.vis.api.models.Issue;
 import gov.uscis.vis.api.models.IssueList;
@@ -12,9 +12,7 @@ import gov.uscis.vis.api.models.SprintList;
 import gov.uscis.vis.api.models.StateEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,34 +21,24 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Created by cedennis on 1/30/17.
+ * Created by cedennis on 3/10/17.
  */
-//@SpringBootApplication
-public class JiraMetricsMain implements CommandLineRunner
-{
-    private static final Logger log = LoggerFactory.getLogger(JiraMetricsMain.class);
-
-    private static Integer[] boardList = new Integer[]{722, 1332}; //everify board = 722, save mod =1332, vdm board = 853
+@Service("metricsService")
+public class MetricsServiceImpl implements MetricsService{
+    private static final Logger log = LoggerFactory.getLogger(MetricsServiceImpl.class);
 
     private static final int TOTAL_SPRINTS_TO_PROCESS = 5;
 
     private Map<Long, Map<PointTypeEnum, Double>> issueTypesMap; // issue type
     private Map<PointTypeEnum, Double> pointsMap; //completed vs total
 
-    private StoryService storyService;
-
-//    public static void main(String[] args) {
-//        SpringApplication.run(JiraMetricsMain.class, args);
-//    }
+    private StoryService storyService; //everify board = 722, save mod =1332, vdm board = 853
 
     @Override
-    public void run(String... args) throws Exception {
+    public Map<Integer, MetricsDto> analyzeBoard(Integer[] boardList) {
         storyService = new StoryServiceSample();
 //        storyService = new StoryServiceJira();
-        analyzeBoardList();
-    }
 
-    private void analyzeBoardList() {
         Map<Integer, MetricsDto> metricsMap = new HashMap<>();
 
         for (int boardId: boardList){
@@ -141,7 +129,7 @@ public class JiraMetricsMain implements CommandLineRunner
         }
 
         System.out.println(metricsMap);
-        log.error(metricsMap.toString());
+        return metricsMap;
     }
 
     public void extractMetricsFromIssueList(IssueList issueList, Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints, Long lastSprintId) {

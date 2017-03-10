@@ -1,4 +1,4 @@
-package gov.uscis.vis.api.Service;
+package gov.uscis.vis.api.service;
 
 import gov.uscis.vis.api.models.IssueList;
 import gov.uscis.vis.api.models.SprintList;

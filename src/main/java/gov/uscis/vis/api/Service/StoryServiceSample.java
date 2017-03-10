@@ -1,4 +1,4 @@
-package gov.uscis.vis.api.Service;
+package gov.uscis.vis.api.service;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -6,9 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.uscis.vis.api.models.IssueList;
 import gov.uscis.vis.api.models.SprintList;
 import gov.uscis.vis.api.models.StateEnum;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;

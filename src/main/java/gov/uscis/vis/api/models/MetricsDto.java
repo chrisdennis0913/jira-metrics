@@ -1,6 +1,6 @@
 package gov.uscis.vis.api.models;
 
-import gov.uscis.vis.api.Utils.NumberUtils;
+import gov.uscis.vis.api.utils.NumberUtils;
 
 import java.util.Arrays;
 

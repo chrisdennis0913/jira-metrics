@@ -1,4 +1,4 @@
-package gov.uscis.vis.api.Utils;
+package gov.uscis.vis.api.utils;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
