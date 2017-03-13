@@ -14,6 +14,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -32,7 +33,7 @@ public class MetricsResource {
     @GET
     @Path("/analyze")
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<Integer, MetricsDto> analyzeJiraBoard( @QueryParam("boardList") Integer[] boardList) {
+    public Map<Integer, MetricsDto> analyzeJiraBoard( @QueryParam("boardList") ArrayList<Integer> boardList) {
         return metricsService.analyzeBoard(boardList);
     }
 

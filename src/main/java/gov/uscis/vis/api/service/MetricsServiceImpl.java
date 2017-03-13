@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class MetricsServiceImpl implements MetricsService{
     private StoryService storyService; //everify board = 722, save mod =1332, vdm board = 853
 
     @Override
-    public Map<Integer, MetricsDto> analyzeBoard(Integer[] boardList) {
+    public Map<Integer, MetricsDto> analyzeBoard(ArrayList<Integer> boardList) {
         storyService = new StoryServiceSample();
 //        storyService = new StoryServiceJira();
 
@@ -132,7 +133,7 @@ public class MetricsServiceImpl implements MetricsService{
         return metricsMap;
     }
 
-    public void extractMetricsFromIssueList(IssueList issueList, Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints, Long lastSprintId) {
+    private void extractMetricsFromIssueList(IssueList issueList, Map<Long, Integer> completedStoriesFromClosedSprints, Map<Long, Double> completedStoryPointsFromClosedSprints, Long lastSprintId) {
         for (Issue issue : issueList.getIssues()){
             Field currentField = issue.getFields();
             IssueType currentIssueType = currentField.getIssuetype();
