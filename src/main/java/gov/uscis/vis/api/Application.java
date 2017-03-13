@@ -26,7 +26,7 @@ public class Application {
 
         springApplication.run(args);
 
-        logger.info("Save API is up and running");
+        logger.info("Jira Metrics API is up and running");
     }
 
     @Bean

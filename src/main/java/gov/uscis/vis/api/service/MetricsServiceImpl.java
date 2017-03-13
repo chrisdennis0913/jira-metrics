@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,7 @@ public class MetricsServiceImpl implements MetricsService{
     private StoryService storyService; //everify board = 722, save mod =1332, vdm board = 853
 
     @Override
-    public Map<Integer, MetricsDto> analyzeBoard(ArrayList<Integer> boardList) {
+    public Map<Integer, MetricsDto> analyzeBoard(List<Integer> boardList) {
         storyService = new StoryServiceSample();
 //        storyService = new StoryServiceJira();
 
