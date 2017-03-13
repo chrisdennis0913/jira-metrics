@@ -3,6 +3,7 @@ package gov.uscis.vis.api.resource;
 import gov.uscis.vis.api.models.MetricsDto;
 import gov.uscis.vis.api.service.MetricsService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +35,15 @@ public class MetricsResource {
 
     @POST
     @Path("/analyze")
+    @ApiOperation(value = "Pulls metrics for a Jira board specified by ids. SAVE Mod is 1332, Everify is 722")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Map<Integer, MetricsDto> analyzeJiraBoard( @ApiParam(name = "boardList", required = true, value = "List of Board Ids") List<Integer> boardList) {
+    public Map<Integer, MetricsDto> analyzeJiraBoard( @ApiParam(name = "boardList", value = "List of Board Ids") List<Integer> boardList) {
+        if (boardList == null || boardList.isEmpty()){
+            boardList = new ArrayList<>();
+            boardList.add(722);
+            boardList.add(1332);
+        }
         return metricsService.analyzeBoard(boardList);
     }
 
